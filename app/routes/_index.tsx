@@ -259,7 +259,6 @@ export default function Index() {
         </Box>
       </Page>
 
-      {/* Modal Xác Nhận Xóa */}
       <Modal
         open={modalActive}
         onClose={closeModal}
