@@ -4,53 +4,43 @@ import { TaskType } from "./types";
 
 connectDB();
 
-//get task pro
-export const getTaskPro = async (params?: {
-  id?: string;
-  title?: string;
-  status?: string;
-  priority?: string;
-  fromDate?: string;
-  toDate?: string;
-  tag?: string;
-}) => {
+//task
+export const getTaskPro = async (params?: { id?: string; title?: string }) => {
   try {
-    const filter: any = {};
-
     if (params?.id) {
       const task = await Task.findById(params.id).lean();
       return task ? [task] : [];
     }
 
     if (params?.title) {
-      filter.title = { $regex: params.title, $options: "i" };
+      const tasks = await Task.find({
+        title: { $regex: params.title, $options: "i" },
+      }).lean();
+      return tasks;
     }
 
-    if (params?.status) {
-      filter.status = params.status;
-    }
-
-    if (params?.priority) {
-      filter.priority = params.priority;
-    }
-
-    if (params?.fromDate || params?.toDate) {
-      filter.dueDate = {};
-      if (params.fromDate) {
-        filter.dueDate.$gte = new Date(params.fromDate);
-      }
-      if (params.toDate) {
-        filter.dueDate.$lte = new Date(params.toDate);
-      }
-    }
-
-    if (params?.tag) {
-      filter.tags = { $regex: `\\b${params.tag}\\b`, $options: "i" };
-    }
-
-    return await Task.find(filter).lean();
+    return await Task.find().lean();
   } catch (error: any) {
     throw new Error(error.message || "Failed to fetch tasks");
+  }
+};
+
+// task;
+export const getTask = async (id: string) => {
+  try {
+    const todo = await Task.findById(id).lean();
+    return todo;
+  } catch (error: any) {
+    throw new Error(error.message || "Failed to fetch todos");
+  }
+};
+
+export const getAllTasks = async () => {
+  try {
+    const todos = await Task.find().lean();
+    return todos;
+  } catch (error: any) {
+    throw new Error(error.message || "Failed to fetch todos");
   }
 };
 
@@ -104,5 +94,15 @@ export async function deleteTaskPro(ids: string[]) {
     return null;
   } catch (error: any) {
     throw new Error(error.message || "Failed to delete tasks");
+  }
+}
+
+// delete taks
+export async function deleteTask(id: string) {
+  try {
+    await Task.findByIdAndDelete(id);
+    return null;
+  } catch (error: any) {
+    throw new Error(error.message || "Failed to fetch todos");
   }
 }

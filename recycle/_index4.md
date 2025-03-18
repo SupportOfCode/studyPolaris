@@ -44,8 +44,6 @@ export const loader: LoaderFunction = async ({ request }) => {
   if (status && status !== "undefined") query.status = status;
   if (priority && priority !== "undefined") query.priority = priority;
 
-  console.log(status ? "true" : "false");
-
   try {
     const tasks = await getTaskPro(query);
     const formattedTasks = tasks.map((task: any) => ({
@@ -148,6 +146,24 @@ export default function Index() {
       onRemove: () => setTaggedWith(""),
     });
   }
+
+  // const filteredTasks = tasks.filter((task: any) => {
+  //   const taskDate = new Date(task.dueDate);
+  //   const startDate = fromDate ? new Date(fromDate) : null;
+  //   const endDate = toDate ? new Date(toDate) : null;
+
+  //   return (
+  //     (selectedStatus.length === 0 || selectedStatus.includes(task.status)) &&
+  //     (selectedPriority.length === 0 ||
+  //       selectedPriority.includes(task.priority)) &&
+  //     (title === "" ||
+  //       task.title.toLowerCase().includes(title.toLowerCase())) &&
+  //     (!startDate || taskDate >= startDate) &&
+  //     (!endDate || taskDate <= endDate) &&
+  //     (taggedWith === "" ||
+  //       task.tags.toLowerCase().includes(taggedWith.toLowerCase()))
+  //   );
+  // });
 
   const { selectedResources, allResourcesSelected, handleSelectionChange } =
     useIndexResourceState(tasks, {

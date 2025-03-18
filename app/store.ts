@@ -1,22 +1,48 @@
 import { create } from "zustand";
-import { TaskType } from "./utils/types";
+import { immer } from "zustand/middleware/immer";
+import { TaskType } from "~/utils/types";
 
 interface TaskStore {
-  taskList: TaskType[];
-  setTasks: (taskList: TaskType[]) => void;
-  addTask: (task: TaskType) => void;
-  editTask: (task: TaskType) => void;
-  deleteTask: (id: string) => void;
+  task: TaskType;
+  setTask: (task: TaskType) => void;
+  editTask: (field: keyof TaskType, value: any) => void;
+  resetTask: () => void;
 }
 
-export const useTaskStore = create<TaskStore>((set) => ({
-  taskList: [],
-  setTasks: (taskList) => set({ taskList }),
-  addTask: (task) => set((state) => ({ taskList: [...state.taskList, task] })),
-  editTask: (task) =>
-    set((state) => ({
-      taskList: state.taskList.map((t) => (t.id === task.id ? task : t)),
-    })),
-  deleteTask: (id) =>
-    set((state) => ({ taskList: state.taskList.filter((t) => t.id !== id) })),
-}));
+export const useTaskStore = create<TaskStore>()(
+  immer((set) => ({
+    task: {
+      title: "",
+      description: "",
+      dueDate: "",
+      priority: "Low",
+      tags: "",
+      status: "Not Started",
+    },
+
+    setTask: (task) => {
+      set((state) => {
+        state.task = task;
+      });
+    },
+
+    editTask: (field, value) => {
+      set((state) => {
+        state.task[field] = value;
+      });
+    },
+
+    resetTask: () => {
+      set((state) => {
+        state.task = {
+          title: "",
+          description: "",
+          dueDate: "",
+          priority: "Low",
+          tags: "",
+          status: "Not Started",
+        };
+      });
+    },
+  }))
+);

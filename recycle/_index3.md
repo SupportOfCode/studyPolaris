@@ -29,31 +29,19 @@ import { TaskType } from "~/utils/types";
 
 export const loader: LoaderFunction = async ({ request }) => {
   const url = new URL(request.url);
-  const title = url.searchParams.get("title") || "";
-  const tags = url.searchParams.get("tags") || "";
-  const status = url.searchParams.get("status") || "";
-  const priority = url.searchParams.get("priority") || "";
-  const fromDate = url.searchParams.get("fromDate") || "";
-  const toDate = url.searchParams.get("toDate") || "";
-
-  const query: Record<string, any> = {};
-  if (title) query.title = title;
-  if (tags) query.tag = tags;
-  if (fromDate) query.fromDate = fromDate;
-  if (toDate) query.toDate = toDate;
-  if (status && status !== "undefined") query.status = status;
-  if (priority && priority !== "undefined") query.priority = priority;
-
-  console.log(status ? "true" : "false");
+  const searchQuery = url.searchParams.get("search") || "";
 
   try {
-    const tasks = await getTaskPro(query);
+    const tasks = await getTaskPro({ title: searchQuery });
     const formattedTasks = tasks.map((task: any) => ({
       ...task,
       _id: task._id.toString(),
       dueDate: task.dueDate
         ? new Date(task.dueDate).toISOString().split("T")[0]
         : "N/A",
+      // tags: task.tags
+      //   ? task.tags.split(",").map((tag: string) => tag.trim())
+      //   : [],
     }));
     return formattedTasks;
   } catch (error) {
@@ -75,13 +63,16 @@ export default function Index() {
   const tasks = useLoaderData<typeof loader>();
   const fetcher = useFetcher();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [title, setTitle] = useState(searchParams.get("title") || "");
-  const [taggedWith, setTaggedWith] = useState(searchParams.get("tag") || "");
-  const [fromDate, setFromDate] = useState(searchParams.get("fromDate") || "");
-  const [toDate, setToDate] = useState(searchParams.get("toDate") || "");
+  const [search, setSearch] = useState(searchParams.get("search") || "");
+  const [modalActive, setModalActive] = useState(false);
+
+  // demo code haven't done
   const [selectedStatus, setSelectedStatus] = useState<string[]>([]);
   const [selectedPriority, setSelectedPriority] = useState<string[]>([]);
-  const [modalActive, setModalActive] = useState(false);
+  const [queryValue, setQueryValue] = useState("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const [taggedWith, setTaggedWith] = useState("");
 
   const { mode, setMode } = useSetIndexFiltersMode(IndexFiltersMode.Filtering);
   const handleStatusChange = useCallback(
@@ -92,7 +83,10 @@ export default function Index() {
     (value: string[]) => setSelectedPriority(value),
     []
   );
-  const handleQueryChange = useCallback((value: string) => setTitle(value), []);
+  const handleQueryChange = useCallback(
+    (value: string) => setQueryValue(value),
+    []
+  );
   const handleFromDateChange = useCallback(
     (value: string) => setFromDate(value),
     []
@@ -106,16 +100,15 @@ export default function Index() {
     []
   );
 
-  const handleQueryClear = useCallback(() => setTitle(""), []);
+  const handleQueryClear = useCallback(() => setQueryValue(""), []);
   const handleClearAll = useCallback(() => {
     setSelectedStatus([]);
     setSelectedPriority([]);
-    setTitle("");
+    setQueryValue("");
     setFromDate("");
     setToDate("");
     setTaggedWith("");
   }, []);
-
   const appliedFilters: IndexFiltersProps["appliedFilters"] = [];
   if (selectedStatus.length > 0) {
     appliedFilters.push({
@@ -149,6 +142,26 @@ export default function Index() {
     });
   }
 
+  const filteredTasks = tasks.filter((task: any) => {
+    const taskDate = new Date(task.dueDate);
+    const startDate = fromDate ? new Date(fromDate) : null;
+    const endDate = toDate ? new Date(toDate) : null;
+
+    return (
+      (selectedStatus.length === 0 || selectedStatus.includes(task.status)) &&
+      (selectedPriority.length === 0 ||
+        selectedPriority.includes(task.priority)) &&
+      (queryValue === "" ||
+        task.title.toLowerCase().includes(queryValue.toLowerCase())) &&
+      (!startDate || taskDate >= startDate) &&
+      (!endDate || taskDate <= endDate) &&
+      (taggedWith === "" ||
+        task.tags.toLowerCase().includes(taggedWith.toLowerCase()))
+    );
+  });
+
+  ////////////////////////////////
+
   const { selectedResources, allResourcesSelected, handleSelectionChange } =
     useIndexResourceState(tasks, {
       resourceIDResolver: (task) => String(task._id),
@@ -157,54 +170,15 @@ export default function Index() {
   useEffect(() => {
     const handler = setTimeout(() => {
       const params = new URLSearchParams(searchParams);
-      if (title) {
-        params.set("title", title);
+      if (search) {
+        params.set("search", search);
       } else {
-        params.delete("title");
+        params.delete("search");
       }
-
-      if (taggedWith) {
-        params.set("tags", taggedWith);
-      } else {
-        params.delete("tags");
-      }
-
-      if (fromDate) {
-        params.set("fromDate", fromDate);
-      } else {
-        params.delete("fromDate");
-      }
-
-      if (toDate) {
-        params.set("toDate", toDate);
-      } else {
-        params.delete("toDate");
-      }
-
-      if (selectedStatus) {
-        params.set("status", selectedStatus[0]);
-      } else {
-        params.delete("status");
-      }
-
-      if (selectedPriority) {
-        params.set("priority", selectedPriority[0]);
-      } else {
-        params.delete("priority");
-      }
-
       setSearchParams(params);
     }, 500);
     return () => clearTimeout(handler);
-  }, [
-    title,
-    taggedWith,
-    fromDate,
-    toDate,
-    selectedStatus,
-    selectedPriority,
-    setSearchParams,
-  ]);
+  }, [search, setSearchParams]);
 
   const handleDelete = async () => {
     if (selectedResources.length > 0) {
@@ -215,8 +189,20 @@ export default function Index() {
     }
   };
 
+  console.log("tasks", tasks);
+
   return (
     <Page title="Task List">
+      <Card>
+        <TextField
+          label="Search Tasks"
+          value={search}
+          onChange={(value) => setSearch(value)}
+          placeholder="Type to search..."
+          autoComplete="on"
+        />
+      </Card>
+
       <Card>
         <InlineGrid columns={{ xs: 3, sm: 3, lg: 3 }}>
           <Link to="/task/new">
@@ -236,7 +222,7 @@ export default function Index() {
 
       <Card>
         <IndexFilters
-          queryValue={title}
+          queryValue={queryValue}
           queryPlaceholder="Search tasks"
           onQueryChange={handleQueryChange}
           onQueryClear={handleQueryClear}
@@ -342,7 +328,7 @@ export default function Index() {
             { title: "Actions" },
           ]}
         >
-          {tasks.map(
+          {filteredTasks.map(
             (
               {
                 _id,
