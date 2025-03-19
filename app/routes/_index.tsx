@@ -149,10 +149,14 @@ export default function Index() {
     });
   }
 
-  const { selectedResources, allResourcesSelected, handleSelectionChange } =
-    useIndexResourceState(tasks, {
-      resourceIDResolver: (task) => String(task._id),
-    });
+  const {
+    selectedResources,
+    allResourcesSelected,
+    handleSelectionChange,
+    clearSelection,
+  } = useIndexResourceState(tasks, {
+    resourceIDResolver: (task) => String(task._id),
+  });
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -203,6 +207,7 @@ export default function Index() {
       selectedResources.forEach((id) => formData.append("ids", id));
       fetcher.submit(formData, { method: "delete" });
       setModalActive(false);
+      clearSelection();
     }
   };
 
