@@ -1,25 +1,27 @@
 import { ActionFunction, LoaderFunction } from "@remix-run/node";
 import {
-  useLoaderData,
-  useSearchParams,
-  useFetcher,
-  Link,
+useLoaderData,
+useSearchParams,
+useFetcher,
+Link,
+useNavigate,
+useNavigation,
 } from "@remix-run/react";
 import {
-  Page,
-  IndexTable,
-  Card,
-  useIndexResourceState,
-  TextField,
-  Button,
-  Badge,
-  Modal,
-  InlineGrid,
-  Box,
-  useSetIndexFiltersMode,
-  IndexFiltersMode,
-  ChoiceList,
-  IndexFilters,
+Page,
+IndexTable,
+Card,
+useIndexResourceState,
+TextField,
+Button,
+Badge,
+Modal,
+InlineGrid,
+Box,
+useSetIndexFiltersMode,
+IndexFiltersMode,
+ChoiceList,
+IndexFilters,
 } from "@shopify/polaris";
 import type { IndexFiltersProps } from "@shopify/polaris";
 import { EditIcon, PlusIcon } from "@shopify/polaris-icons";
@@ -28,136 +30,142 @@ import { deleteTaskPro, getTaskPro } from "~/utils/tasks";
 import { TaskType } from "~/utils/types";
 
 export const loader: LoaderFunction = async ({ request }) => {
-  const url = new URL(request.url);
-  const title = url.searchParams.get("title") || "";
-  const tags = url.searchParams.get("tags") || "";
-  const status = url.searchParams.get("status") || "";
-  const priority = url.searchParams.get("priority") || "";
-  const fromDate = url.searchParams.get("fromDate") || "";
-  const toDate = url.searchParams.get("toDate") || "";
+const url = new URL(request.url);
+const title = url.searchParams.get("title") || "";
+const tags = url.searchParams.get("tags") || "";
+const status = url.searchParams.get("status") || "";
+const priority = url.searchParams.get("priority") || "";
+const fromDate = url.searchParams.get("fromDate") || "";
+const toDate = url.searchParams.get("toDate") || "";
 
-  const query: Record<string, any> = {};
-  if (title) query.title = title;
-  if (tags) query.tag = tags;
-  if (fromDate) query.fromDate = fromDate;
-  if (toDate) query.toDate = toDate;
-  if (status && status !== "undefined") query.status = status;
-  if (priority && priority !== "undefined") query.priority = priority;
+const query: Record<string, any> = {};
+if (title) query.title = title;
+if (tags) query.tag = tags;
+if (fromDate) query.fromDate = fromDate;
+if (toDate) query.toDate = toDate;
+if (status && status !== "undefined") query.status = status;
+if (priority && priority !== "undefined") query.priority = priority;
 
-  console.log(status ? "true" : "false");
+console.log(status ? "true" : "false");
 
-  try {
-    const tasks = await getTaskPro(query);
-    const formattedTasks = tasks.map((task: any) => ({
-      ...task,
-      _id: task._id.toString(),
-      dueDate: task.dueDate
-        ? new Date(task.dueDate).toISOString().split("T")[0]
-        : "N/A",
-    }));
-    return formattedTasks;
-  } catch (error) {
-    console.error("Failed to load tasks:", error);
-    return [];
-  }
+try {
+const tasks = await getTaskPro(query);
+const formattedTasks = tasks.map((task: any) => ({
+...task,
+\_id: task.\_id.toString(),
+dueDate: task.dueDate
+? new Date(task.dueDate).toISOString().split("T")[0]
+: "N/A",
+}));
+return formattedTasks;
+} catch (error) {
+console.error("Failed to load tasks:", error);
+return [];
+}
 };
 
 export const action: ActionFunction = async ({ request }) => {
-  const formData = await request.formData();
-  const ids = formData.getAll("ids") as string[];
+const formData = await request.formData();
+const ids = formData.getAll("ids") as string[];
 
-  if (request.method === "DELETE") {
-    return await deleteTaskPro(ids);
-  }
+if (request.method === "DELETE") {
+return await deleteTaskPro(ids);
+}
 };
 
 export default function Index() {
-  const tasks = useLoaderData<typeof loader>();
-  const fetcher = useFetcher();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [title, setTitle] = useState(searchParams.get("title") || "");
-  const [taggedWith, setTaggedWith] = useState(searchParams.get("tag") || "");
-  const [fromDate, setFromDate] = useState(searchParams.get("fromDate") || "");
-  const [toDate, setToDate] = useState(searchParams.get("toDate") || "");
-  const [selectedStatus, setSelectedStatus] = useState<string[]>([]);
-  const [selectedPriority, setSelectedPriority] = useState<string[]>([]);
-  const [modalActive, setModalActive] = useState(false);
+const tasks = useLoaderData<typeof loader>();
+const fetcher = useFetcher();
+const [searchParams, setSearchParams] = useSearchParams();
+const [title, setTitle] = useState(searchParams.get("title") || "");
+const [taggedWith, setTaggedWith] = useState(searchParams.get("tag") || "");
+const [fromDate, setFromDate] = useState(searchParams.get("fromDate") || "");
+const [toDate, setToDate] = useState(searchParams.get("toDate") || "");
+const [selectedStatus, setSelectedStatus] = useState<string[]>([]);
+const [selectedPriority, setSelectedPriority] = useState<string[]>([]);
+const [modalActive, setModalActive] = useState(false);
 
-  const { mode, setMode } = useSetIndexFiltersMode(IndexFiltersMode.Filtering);
-  const handleStatusChange = useCallback(
-    (value: string[]) => setSelectedStatus(value),
-    []
-  );
-  const handlePriorityChange = useCallback(
-    (value: string[]) => setSelectedPriority(value),
-    []
-  );
-  const handleQueryChange = useCallback((value: string) => setTitle(value), []);
-  const handleFromDateChange = useCallback(
-    (value: string) => setFromDate(value),
-    []
-  );
-  const handleToDateChange = useCallback(
-    (value: string) => setToDate(value),
-    []
-  );
-  const handleTaggedWithChange = useCallback(
-    (value: string) => setTaggedWith(value),
-    []
-  );
+const navigate = useNavigate();
+const navigation = useNavigation();
 
-  const handleQueryClear = useCallback(() => setTitle(""), []);
-  const handleClearAll = useCallback(() => {
-    setSelectedStatus([]);
-    setSelectedPriority([]);
-    setTitle("");
-    setFromDate("");
-    setToDate("");
-    setTaggedWith("");
-  }, []);
+console.log("navigate: ", navigate);
+console.log("navigation: ", navigation);
 
-  const appliedFilters: IndexFiltersProps["appliedFilters"] = [];
-  if (selectedStatus.length > 0) {
-    appliedFilters.push({
-      key: "status",
-      label: `Status: ${selectedStatus.join(", ")}`,
-      onRemove: () => setSelectedStatus([]),
-    });
-  }
-  if (selectedPriority.length > 0) {
-    appliedFilters.push({
-      key: "priority",
-      label: `Priority: ${selectedPriority.join(", ")}`,
-      onRemove: () => setSelectedPriority([]),
-    });
-  }
-  if (fromDate || toDate) {
-    appliedFilters.push({
-      key: "dueDate",
-      label: `Due Date: ${fromDate || "..."} → ${toDate || "..."}`,
-      onRemove: () => {
-        setFromDate("");
-        setToDate("");
-      },
-    });
-  }
-  if (taggedWith) {
-    appliedFilters.push({
-      key: "taggedWith",
-      label: `Tagged with: ${taggedWith}`,
-      onRemove: () => setTaggedWith(""),
-    });
-  }
+const { mode, setMode } = useSetIndexFiltersMode(IndexFiltersMode.Filtering);
+const handleStatusChange = useCallback(
+(value: string[]) => setSelectedStatus(value),
+[]
+);
+const handlePriorityChange = useCallback(
+(value: string[]) => setSelectedPriority(value),
+[]
+);
+const handleQueryChange = useCallback((value: string) => setTitle(value), []);
+const handleFromDateChange = useCallback(
+(value: string) => setFromDate(value),
+[]
+);
+const handleToDateChange = useCallback(
+(value: string) => setToDate(value),
+[]
+);
+const handleTaggedWithChange = useCallback(
+(value: string) => setTaggedWith(value),
+[]
+);
 
-  const { selectedResources, allResourcesSelected, handleSelectionChange } =
-    useIndexResourceState(tasks, {
-      resourceIDResolver: (task) => String(task._id),
-    });
+const handleQueryClear = useCallback(() => setTitle(""), []);
+const handleClearAll = useCallback(() => {
+setSelectedStatus([]);
+setSelectedPriority([]);
+setTitle("");
+setFromDate("");
+setToDate("");
+setTaggedWith("");
+}, []);
 
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      const params = new URLSearchParams(searchParams);
-      let hasChanged = false;
+const appliedFilters: IndexFiltersProps["appliedFilters"] = [];
+if (selectedStatus.length > 0) {
+appliedFilters.push({
+key: "status",
+label: `Status: ${selectedStatus.join(", ")}`,
+onRemove: () => setSelectedStatus([]),
+});
+}
+if (selectedPriority.length > 0) {
+appliedFilters.push({
+key: "priority",
+label: `Priority: ${selectedPriority.join(", ")}`,
+onRemove: () => setSelectedPriority([]),
+});
+}
+if (fromDate || toDate) {
+appliedFilters.push({
+key: "dueDate",
+label: `Due Date: ${fromDate || "..."} → ${toDate || "..."}`,
+onRemove: () => {
+setFromDate("");
+setToDate("");
+},
+});
+}
+if (taggedWith) {
+appliedFilters.push({
+key: "taggedWith",
+label: `Tagged with: ${taggedWith}`,
+onRemove: () => setTaggedWith(""),
+});
+}
+
+const { selectedResources, allResourcesSelected, handleSelectionChange } =
+useIndexResourceState(tasks, {
+resourceIDResolver: (task) => String(task.\_id),
+});
+
+useEffect(() => {
+const handler = setTimeout(() => {
+const params = new URLSearchParams(searchParams);
+let hasChanged = false;
 
       const updateParam = (key: string, value: string | undefined) => {
         if (value) {
@@ -186,44 +194,44 @@ export default function Index() {
     }, 500);
 
     return () => clearTimeout(handler);
-  }, [
-    title,
-    taggedWith,
-    fromDate,
-    toDate,
-    selectedStatus,
-    selectedPriority,
-    searchParams,
-    setSearchParams,
-  ]);
 
-  const handleDelete = async () => {
-    if (selectedResources.length > 0) {
-      const formData = new FormData();
-      selectedResources.forEach((id) => formData.append("ids", id));
-      fetcher.submit(formData, { method: "delete" });
-      setModalActive(false);
-    }
-  };
+}, [
+title,
+taggedWith,
+fromDate,
+toDate,
+selectedStatus,
+selectedPriority,
+searchParams,
+setSearchParams,
+]);
 
-  return (
-    <Page title="Task List">
-      <Card>
-        <InlineGrid columns={{ xs: 3, sm: 3, lg: 3 }}>
-          <Link to="/task/new">
-            <Button size="large" icon={PlusIcon} fullWidth>
-              Add Task
-            </Button>
-          </Link>
-          <Box></Box>
-          <Button
-            disabled={selectedResources.length === 0}
-            onClick={() => setModalActive(true)}
-          >
-            Delete tasks
-          </Button>
-        </InlineGrid>
-      </Card>
+const handleDelete = async () => {
+if (selectedResources.length > 0) {
+const formData = new FormData();
+selectedResources.forEach((id) => formData.append("ids", id));
+fetcher.submit(formData, { method: "delete" });
+setModalActive(false);
+}
+};
+
+return (
+<Page title="Task List">
+<Card>
+<InlineGrid columns={{ xs: 3, sm: 3, lg: 3 }}>
+<Link to="/task/new">
+<Button size="large" icon={PlusIcon} fullWidth>
+Add Task
+</Button>
+</Link>
+<Box></Box>
+<Button
+disabled={selectedResources.length === 0}
+onClick={() => setModalActive(true)} >
+Delete tasks
+</Button>
+</InlineGrid>
+</Card>
 
       <Card>
         <IndexFilters
@@ -424,5 +432,6 @@ export default function Index() {
         </Modal.Section>
       </Modal>
     </Page>
-  );
+
+);
 }

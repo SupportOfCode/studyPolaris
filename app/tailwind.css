@@ -5,3 +5,9 @@
 body {
   background-color: white !important;
 }
+
+.Polaris-Button.Polaris-Button--pressable.Polaris-Button--variantMonochromePlain.Polaris-Button--sizeMicro.Polaris-Button--textAlignCenter::after {
+  content: " Clear all";
+  font-size: 14px;
+  color: red;
+}

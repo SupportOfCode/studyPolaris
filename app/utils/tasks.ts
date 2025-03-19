@@ -48,7 +48,7 @@ export const getTaskPro = async (params?: {
       filter.tags = { $regex: `\\b${params.tag}\\b`, $options: "i" };
     }
 
-    return await Task.find(filter).lean();
+    return (await Task.find(filter).lean()).reverse();
   } catch (error: any) {
     throw new Error(error.message || "Failed to fetch tasks");
   }
